@@ -1,21 +1,13 @@
-import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
+import * as glob from "glob";
+import * as camelcase from "camelcase";
 
-if (!admin.apps.length) {
-  admin.initializeApp();
+const files = glob.sync("./**/*.f.js", {
+  cwd: __dirname,
+  ignore: "./node_modules/**",
+});
+
+for (let i = 0; i < files.length; i++) {
+  const file = files[i];
+  const functionName = camelcase(file.slice(0, -5).split("/").join("_"));
+  exports[functionName] = require(file);
 }
-
-const db = admin.firestore();
-
-export const listHouses = functions.https.onRequest(
-  async (request, response) => {
-    const houses = db.collection("Properties");
-    const snapshot = await houses.get();
-    const arrayJson = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      const id = doc.id;
-      return { id, ...data };
-    });
-    response.send(arrayJson);
-  }
-);
