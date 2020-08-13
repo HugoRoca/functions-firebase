@@ -3,6 +3,7 @@ import * as cors from "cors";
 import * as express from "express";
 import * as admin from "firebase-admin";
 import * as cookieParser from "cookie-parser";
+import { validateToken } from '../security/validateSession'
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -14,18 +15,19 @@ const corsVal = cors({ origin: true });
 
 endPointExpress.options("*", corsVal);
 endPointExpress.use(corsVal).use(cookieParser());
+endPointExpress.use(validateToken(["ADMIN", "OPERATOR"]))
 endPointExpress.post("*", async (req: any, res: any) => {
   try {
-    const _id = req.body.id;
-    const _role = req.body.role;
-    const _roles = req.body.roles;
+    const id = req.body.id;
+    const role = req.body.role;
+    const roles = req.body.roles;
 
-    await admin.auth().setCustomUserClaims(_id, _role);
+    await admin.auth().setCustomUserClaims(id, role);
 
     await db
       .collection("Users")
-      .doc(_id)
-      .set({ roles: _roles }, { merge: true });
+      .doc(id)
+      .set({ roles: roles }, { merge: true });
 
     res.status(200);
     res.send({ status: "success" });
